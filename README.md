@@ -1,4 +1,4 @@
-# Island Simulation 🌍
+# Island Simulation 
 
 Java project that simulates an ecosystem.
 
@@ -15,4 +15,4 @@ Java project that simulates an ecosystem.
 - Multithreading
 
 ## Run
-Run Main.java
+Run Main.java in IntelliJ IDEA
