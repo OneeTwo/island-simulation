@@ -1,4 +1,4 @@
-package com.island_game.model;
+package com.islandgame.model;
 
 public abstract class Animal {
     protected double weight;
