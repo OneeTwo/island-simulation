@@ -1,4 +1,4 @@
-package com.island_game.model;
+package com.islandgame.model;
 
 public abstract class Herbivore extends Animal {
     public Herbivore(double weight, int speed, double foodNeeded, int maxInCell) {
