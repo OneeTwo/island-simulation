@@ -1,26 +1,42 @@
 package com.islandgame.world;
 
 import com.islandgame.model.Animal;
+import com.islandgame.settings.MoveAction;
 
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
 
 public class Island {
 
     private final Location[][] locations;
+    private final int width;
+    private final int height;
 
     private final ExecutorService executor =
             Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     public Island(int width, int height) {
+        this.width = width;
+        this.height = height;
+
         locations = new Location[width][height];
 
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                locations[i][j] = new Location();
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                locations[x][y] = new Location();
             }
         }
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 
     public void addAnimal(int x, int y, Animal animal) {
@@ -35,41 +51,87 @@ public class Island {
         }
     }
 
+    public void moveAnimalsParallel() {
+        List<Future<List<MoveAction>>> futures = new ArrayList<>();
 
-    public void processEatingParallel() {
-        for (int i = 0; i < locations.length; i++) {
-            for (int j = 0; j < locations[i].length; j++) {
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                int finalX = x;
+                int finalY = y;
 
-                int x = i;
-                int y = j;
-
-                executor.submit(() -> locations[x][y].processEating());
+                futures.add(executor.submit(() ->
+                        locations[finalX][finalY].prepareMoves(finalX, finalY, this)
+                ));
             }
         }
+
+        for (Future<List<MoveAction>> future : futures) {
+            try {
+                applyMoves(future.get());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Move task interrupted", e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException("Move task failed", e);
+            }
+        }
+    }
+
+    private void applyMoves(List<MoveAction> moves) {
+        for (MoveAction move : moves) {
+            Location from = locations[move.fromX][move.fromY];
+            Location to = locations[move.toX][move.toY];
+
+            synchronized (from) {
+                if (from.removeAnimal(move.animal)) {
+                    synchronized (to) {
+                        to.addAnimal(move.animal);
+                    }
+                }
+            }
+        }
+    }
+
+    public void processEatingParallel() {
+        List<Runnable> tasks = new ArrayList<>();
+
+        for (int i = 0; i < locations.length; i++) {
+            for (int j = 0; j < locations[i].length; j++) {
+                int x = i;
+                int y = j;
+                tasks.add(() -> locations[x][y].processEating());
+            }
+        }
+
+        runTasks(tasks);
     }
 
     public void processPlantEatingParallel() {
+        List<Runnable> tasks = new ArrayList<>();
+
         for (int i = 0; i < locations.length; i++) {
             for (int j = 0; j < locations[i].length; j++) {
-
                 int x = i;
                 int y = j;
-
-                executor.submit(() -> locations[x][y].processPlantEating());
+                tasks.add(() -> locations[x][y].processPlantEating());
             }
         }
+
+        runTasks(tasks);
     }
 
     public void removeStarvingAnimalsParallel() {
+        List<Runnable> tasks = new ArrayList<>();
+
         for (int i = 0; i < locations.length; i++) {
             for (int j = 0; j < locations[i].length; j++) {
-
                 int x = i;
                 int y = j;
-
-                executor.submit(() -> locations[x][y].removeStarvingAnimals());
+                tasks.add(() -> locations[x][y].removeStarvingAnimals());
             }
         }
+
+        runTasks(tasks);
     }
 
     public void reproduceAnimals() {
@@ -80,17 +142,32 @@ public class Island {
         }
     }
 
-    public void printStatistics() {
+    private void runTasks(List<Runnable> tasks) {
+        List<Future<?>> futures = new ArrayList<>();
 
+        for (Runnable task : tasks) {
+            futures.add(executor.submit(task));
+        }
+
+        for (Future<?> future : futures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Task interrupted", e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException("Task failed", e);
+            }
+        }
+    }
+
+    public void printStatistics() {
         Map<String, Integer> stats = new HashMap<>();
 
         for (int i = 0; i < locations.length; i++) {
             for (int j = 0; j < locations[i].length; j++) {
-
                 for (Animal animal : locations[i][j].getAnimals()) {
-
                     String name = animal.getClass().getSimpleName();
-
                     stats.put(name, stats.getOrDefault(name, 0) + 1);
                 }
             }
@@ -111,7 +188,6 @@ public class Island {
     public void printIslandPretty() {
         for (int i = 0; i < locations.length; i++) {
             for (int j = 0; j < locations[i].length; j++) {
-
                 var animals = locations[i][j].getAnimals();
 
                 if (animals.isEmpty()) {
@@ -121,41 +197,6 @@ public class Island {
                 }
             }
             System.out.println();
-        }
-    }
-
-    public void moveAnimalsBetweenCells() {
-
-        Random random = new Random();
-
-        for (int i = 0; i < locations.length; i++) {
-            for (int j = 0; j < locations[i].length; j++) {
-
-                Location current = locations[i][j];
-
-                List<Animal> copy = new ArrayList<>(current.getAnimals());
-
-                for (Animal animal : copy) {
-
-                    int dx = random.nextInt(3) - 1;
-                    int dy = random.nextInt(3) - 1;
-
-                    int step = random.nextInt(animal.getSpeed() + 1);
-
-                    int newX = i + dx * step;
-                    int newY = j + dy * step;
-
-                    if (newX >= 0 && newX < locations.length &&
-                            newY >= 0 && newY < locations[i].length) {
-
-                        Location target = locations[newX][newY];
-
-                        if (target.addAnimal(animal)) {
-                            current.removeAnimal(animal);;
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -169,5 +210,9 @@ public class Island {
         }
 
         return total;
+    }
+
+    public void shutdown() {
+        executor.shutdown();
     }
 }
