@@ -1,4 +1,4 @@
-package com.island_game.model;
+package com.islandgame.model;
 
 import java.util.HashMap;
 import java.util.Map;

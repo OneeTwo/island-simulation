@@ -1,8 +1,8 @@
-package com.island_game.world;
+package com.islandgame.world;
 
-import com.island_game.model.Animal;
-import com.island_game.model.Herbivore;
-import com.island_game.model.Predator;
+import com.islandgame.model.Animal;
+import com.islandgame.model.Herbivore;
+import com.islandgame.model.Predator;
 
 import java.util.*;
 
@@ -11,7 +11,6 @@ public class Location {
     private final List<Animal> animals = new ArrayList<>();
     private int plants = 0;
 
-    // ➕ додавання з обмеженням
     public synchronized boolean addAnimal(Animal animal) {
 
         long count = animals.stream()
@@ -29,13 +28,10 @@ public class Location {
         return new ArrayList<>(animals);
     }
 
-    // 🌿
     public void growPlants() {
-        plants = Math.min(plants + 2, 50); // 🔥 менше росту
+        plants = Math.min(plants + 2, 50);
     }
 
-
-    // 🍖
     public synchronized void processEating() {
 
         Random random = new Random();
@@ -64,7 +60,6 @@ public class Location {
         }
     }
 
-    // 🌿
     public synchronized void processPlantEating() {
 
         for (Animal animal : animals) {
@@ -77,7 +72,6 @@ public class Location {
         }
     }
 
-    // 💀
     public synchronized void removeStarvingAnimals() {
 
         Iterator<Animal> iterator = animals.iterator();
@@ -97,7 +91,6 @@ public class Location {
         }
     }
 
-    // ❤️
     public synchronized void reproduce() {
 
         Map<Class<? extends Animal>, Integer> countMap = new HashMap<>();

@@ -1,6 +1,6 @@
-package com.island_game.world;
+package com.islandgame.world;
 
-import com.island_game.model.Animal;
+import com.islandgame.model.Animal;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -23,15 +23,10 @@ public class Island {
         }
     }
 
-    public Location getLocation(int x, int y) {
-        return locations[x][y];
-    }
-
     public void addAnimal(int x, int y, Animal animal) {
         locations[x][y].addAnimal(animal);
     }
 
-    // 🌿
     public void growPlants() {
         for (int i = 0; i < locations.length; i++) {
             for (int j = 0; j < locations[i].length; j++) {
@@ -113,7 +108,6 @@ public class Island {
         System.out.println("Total animals: " + total);
     }
 
-    // 📊
     public void printIslandPretty() {
         for (int i = 0; i < locations.length; i++) {
             for (int j = 0; j < locations[i].length; j++) {
@@ -129,8 +123,6 @@ public class Island {
             System.out.println();
         }
     }
-
-
 
     public void moveAnimalsBetweenCells() {
 
