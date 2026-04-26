@@ -1,14 +1,16 @@
 package com.islandgame;
 
-import com.islandgame.model.animal.Rabbit;
-import com.islandgame.model.animal.Wolf;
+import com.islandgame.model.Animal;
+import com.islandgame.model.animal.*;
 import com.islandgame.world.Island;
 
+import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public class Main {
 
@@ -23,17 +25,30 @@ public class Main {
         Random random = new Random();
 
         // started init
+        List<Supplier<Animal>> animals = List.of(
+                Wolf::new,
+                Rabbit::new,
+                Fox::new,
+                Bear::new,
+                Deer::new,
+                Mouse::new,
+                Goat::new,
+                Sheep::new,
+                Boar::new,
+                Buffalo::new,
+                Duck::new,
+                Caterpillar::new,
+                Horse::new,
+                Eagle::new
+        );
+
         for (int i = 0; i < 30; i++) {
             int x = random.nextInt(width);
             int y = random.nextInt(height);
 
-            if (random.nextBoolean()) {
-                island.addAnimal(x, y, new Wolf());
-            } else {
-                island.addAnimal(x, y, new Rabbit());
-            }
+            Animal animal = animals.get(random.nextInt(animals.size())).get();
+            island.addAnimal(x, y, animal);
         }
-
         System.out.println("=== START ===");
         island.printIslandPretty();
         island.printStatistics();
