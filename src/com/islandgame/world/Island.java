@@ -1,6 +1,7 @@
 package com.islandgame.world;
 
 import com.islandgame.model.Animal;
+import com.islandgame.model.Position;
 import com.islandgame.settings.MoveAction;
 
 import java.util.ArrayList;
@@ -43,6 +44,22 @@ public class Island {
         locations[x][y].addAnimal(animal);
     }
 
+    public void addAnimal(
+            Position position,
+            Animal animal
+    ) {
+
+        addAnimal(
+                position.getX(),
+                position.getY(),
+                animal
+        );
+
+        animal.setPosition(
+                position
+        );
+    }
+
     public void growPlants() {
         for (int i = 0; i < locations.length; i++) {
             for (int j = 0; j < locations[i].length; j++) {
@@ -77,29 +94,87 @@ public class Island {
         }
     }
 
-    private void applyMoves(List<MoveAction> moves) {
-        for (MoveAction move : moves) {
-            Location from = locations[move.fromX][move.fromY];
-            Location to = locations[move.toX][move.toY];
+    private void applyMoves(
+            List<MoveAction> moves
+    ) {
 
-            synchronized (from) {
-                if (from.removeAnimal(move.animal)) {
-                    synchronized (to) {
-                        to.addAnimal(move.animal);
-                    }
+        for (MoveAction move : moves) {
+
+            Location from =
+                    locations[
+                            move.from.getX()
+                            ][
+                            move.from.getY()
+                            ];
+
+            Location to =
+                    locations[
+                            move.to.getX()
+                            ][
+                            move.to.getY()
+                            ];
+
+            from.getLock().lock();
+            to.getLock().lock();
+
+            try {
+
+                if (
+                        from.removeAnimal(
+                                move.animal
+                        )
+                ) {
+
+                    to.addAnimal(
+                            move.animal
+                    );
+
+                    move.animal.setPosition(
+                            move.to
+                    );
                 }
+
+            }
+            finally {
+
+                to.getLock().unlock();
+                from.getLock().unlock();
             }
         }
     }
 
     public void processEatingParallel() {
-        List<Runnable> tasks = new ArrayList<>();
 
-        for (int i = 0; i < locations.length; i++) {
-            for (int j = 0; j < locations[i].length; j++) {
-                int x = i;
-                int y = j;
-                tasks.add(() -> locations[x][y].processEating());
+        List<Runnable> tasks =
+                new ArrayList<>();
+
+        for (int i=0;i<locations.length;i++) {
+
+            for (
+                    int j=0;
+                    j<locations[i].length;
+                    j++
+            ) {
+
+                int x=i;
+                int y=j;
+
+                tasks.add(() -> {
+
+                    Location location =
+                            locations[x][y];
+
+                    location.getLock().lock();
+
+                    try {
+
+                        location.processEating();
+
+                    } finally {
+
+                        location.getLock().unlock();
+                    }
+                });
             }
         }
 
@@ -121,13 +196,37 @@ public class Island {
     }
 
     public void removeStarvingAnimalsParallel() {
-        List<Runnable> tasks = new ArrayList<>();
 
-        for (int i = 0; i < locations.length; i++) {
-            for (int j = 0; j < locations[i].length; j++) {
-                int x = i;
-                int y = j;
-                tasks.add(() -> locations[x][y].removeStarvingAnimals());
+        List<Runnable> tasks =
+                new ArrayList<>();
+
+        for (int i=0;i<locations.length;i++) {
+
+            for (
+                    int j=0;
+                    j<locations[i].length;
+                    j++
+            ) {
+
+                int x=i;
+                int y=j;
+
+                tasks.add(() -> {
+
+                    Location location =
+                            locations[x][y];
+
+                    location.getLock().lock();
+
+                    try {
+
+                        location.removeStarvingAnimals();
+
+                    } finally {
+
+                        location.getLock().unlock();
+                    }
+                });
             }
         }
 
@@ -135,9 +234,28 @@ public class Island {
     }
 
     public void reproduceAnimals() {
-        for (int i = 0; i < locations.length; i++) {
-            for (int j = 0; j < locations[i].length; j++) {
-                locations[i][j].reproduce();
+
+        for (int i=0;i<locations.length;i++) {
+
+            for (
+                    int j=0;
+                    j<locations[i].length;
+                    j++
+            ) {
+
+                Location location =
+                        locations[i][j];
+
+                location.getLock().lock();
+
+                try {
+
+                    location.reproduce();
+
+                } finally {
+
+                    location.getLock().unlock();
+                }
             }
         }
     }

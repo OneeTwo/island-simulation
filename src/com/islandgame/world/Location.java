@@ -2,16 +2,25 @@ package com.islandgame.world;
 
 import com.islandgame.model.Animal;
 import com.islandgame.model.Herbivore;
+import com.islandgame.model.Position;
 import com.islandgame.model.Predator;
 import com.islandgame.settings.MoveAction;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Location {
 
     private final List<Animal> animals = new ArrayList<>();
     private int plants = 0;
+
+    private final ReentrantLock lock =
+            new ReentrantLock();
+
+    public ReentrantLock getLock() {
+        return lock;
+    }
 
     public synchronized boolean addAnimal(Animal animal) {
         long count = animals.stream()
@@ -124,33 +133,85 @@ public class Location {
         }
     }
 
-    public List<MoveAction> prepareMoves(int x, int y, Island island) {
+    public List<MoveAction> prepareMoves(
+            int x,
+            int y,
+            Island island
+    ) {
 
-        List<MoveAction> moves = new ArrayList<>();
+        List<MoveAction> moves =
+                new ArrayList<>();
 
         List<Animal> copy;
+
         synchronized (this) {
-            copy = new ArrayList<>(animals);
+            copy =
+                    new ArrayList<>(animals);
         }
 
         for (Animal animal : copy) {
 
-            int speed = animal.getSpeed();
+            int speed =
+                    animal.getSpeed();
 
-            int newX = x + ThreadLocalRandom.current()
-                    .nextInt(-speed, speed + 1);
+            int newX =
+                    x +
+                            ThreadLocalRandom.current()
+                                    .nextInt(
+                                            -speed,
+                                            speed + 1
+                                    );
 
-            int newY = y + ThreadLocalRandom.current()
-                    .nextInt(-speed, speed + 1);
+            int newY =
+                    y +
+                            ThreadLocalRandom.current()
+                                    .nextInt(
+                                            -speed,
+                                            speed + 1
+                                    );
 
-            newX = Math.max(0, Math.min(island.getWidth() - 1, newX));
-            newY = Math.max(0, Math.min(island.getHeight() - 1, newY));
+            newX =
+                    Math.max(
+                            0,
+                            Math.min(
+                                    island.getWidth()-1,
+                                    newX
+                            )
+                    );
 
-            if (newX != x || newY != y) {
-                moves.add(new MoveAction(animal, x, y, newX, newY));
+            newY =
+                    Math.max(
+                            0,
+                            Math.min(
+                                    island.getHeight()-1,
+                                    newY
+                            )
+                    );
+
+            if (newX != x ||
+                    newY != y) {
+
+                Position from =
+                        new Position(
+                                x,
+                                y
+                        );
+
+                Position to =
+                        new Position(
+                                newX,
+                                newY
+                        );
+
+                moves.add(
+                        new MoveAction(
+                                animal,
+                                from,
+                                to
+                        )
+                );
             }
         }
 
         return moves;
-    }
-}
+    }}

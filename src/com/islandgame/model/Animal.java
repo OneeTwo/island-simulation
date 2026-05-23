@@ -7,6 +7,7 @@ public abstract class Animal {
     protected int maxInCell;
     protected boolean hasEaten = false;
     protected int starvation = 0;
+    private Position position;
 
     public Animal(double weight, int speed, double foodNeeded, int maxInCell) {
         this.weight = weight;
@@ -43,5 +44,13 @@ public abstract class Animal {
 
     public int getStarvation() {
         return starvation;
+    }
+
+    public Position getPosition() {
+        return position;
+    }
+
+    public void setPosition(Position position) {
+        this.position = position;
     }
 }
